@@ -19,12 +19,19 @@
             background-color: #f1f5f9;
         }
 
+        /* Centrerad container som matchar A4-bredd */
+        .app-container {
+            width: 100%;
+            max-width: var(--a4-width);
+            margin: 0 auto;
+        }
+
         /* A4 Page Styling */
         .page {
             width: var(--a4-width);
             min-height: var(--a4-height);
             padding: 20mm;
-            margin: 2rem auto;
+            margin: 2rem 0;
             background: white;
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
             position: relative;
@@ -97,15 +104,28 @@
         }
 
         @media print {
-            body { background: none; padding: 0; margin: 0; }
+            @page {
+                size: A4;
+                margin: 0;
+            }
+            body { 
+                background: none; 
+                padding: 0; 
+                margin: 0; 
+                width: 210mm;
+                height: 297mm;
+            }
             .no-print { display: none !important; }
             .page {
-                margin: 0;
-                box-shadow: none;
+                margin: 0 !important;
+                box-shadow: none !important;
                 width: 210mm;
                 height: 297mm;
                 padding: 15mm;
                 border: none;
+                position: absolute;
+                top: 0;
+                left: 0;
             }
             .page-break-indicator { display: none; }
         }
@@ -113,14 +133,14 @@
 </head>
 <body class="pb-24">
 
-    <div class="max-w-5xl mx-auto px-4">
+    <div class="app-container px-4 sm:px-0">
         <header class="no-print bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mt-8 mb-4">
             <div class="flex items-center gap-3 mb-4">
                 <span class="text-3xl">📝</span>
                 <h1 class="text-2xl font-bold text-slate-800 tracking-tight">Skrivträning</h1>
             </div>
             
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 gap-6">
                 <!-- Textinmatning -->
                 <div class="space-y-3">
                     <div class="flex justify-between items-end">
@@ -135,13 +155,13 @@
                             </button>
                         </div>
                     </div>
-                    <textarea id="textInput" rows="5" 
+                    <textarea id="textInput" rows="4" 
                         class="w-full p-4 border border-slate-300 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none transition text-base" 
                         placeholder="Skriv texten här så skapas rader automatiskt..."></textarea>
                 </div>
 
-                <!-- Inställningar -->
-                <div class="bg-slate-50 p-5 rounded-xl space-y-5 border border-slate-100">
+                <!-- Inställningar (Förenklad rad) -->
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div class="md:col-span-1">
                             <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Teckensnitt</label>
@@ -168,13 +188,6 @@
                             </label>
                         </div>
                     </div>
-                    
-                    <button onclick="window.print()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl transition shadow-lg hover:shadow-blue-200 flex items-center justify-center gap-2 text-lg active:scale-[0.98]">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                        </svg>
-                        Skriv ut övningsbladet
-                    </button>
                 </div>
             </div>
         </header>
@@ -186,6 +199,16 @@
             <div class="page-break-indicator no-print">
                 <div class="page-break-label">Sidans slut - text nedanför skrivs inte ut</div>
             </div>
+        </div>
+
+        <!-- Utskriftsknapp under bladet -->
+        <div class="no-print flex justify-center mt-8">
+            <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-10 rounded-2xl transition shadow-xl hover:shadow-blue-200 flex items-center justify-center gap-3 text-xl active:scale-95 group">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 group-hover:animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                </svg>
+                Skriv ut bladet
+            </button>
         </div>
     </div>
 
