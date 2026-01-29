@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skrivträning - Skapa egna övningsblad</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Schoolbell&family=Short+Stack&family=Comic+Neue:wght@400;700&family=Quicksand:wght@400;700&family=Patrick+Hand&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --line-color: #cbd5e1;
+            --mid-line-color: #e2e8f0;
+            --a4-width: 210mm;
+            --a4-height: 297mm;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9;
+        }
+
+        /* A4 Page Styling */
+        .page {
+            width: var(--a4-width);
+            min-height: var(--a4-height);
+            padding: 20mm;
+            margin: 2rem auto;
+            background: white;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+            position: relative;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        .lines-container {
+            position: relative;
+            width: 100%;
+            margin-top: 0.1rem;
+            margin-bottom: 1.2rem;
+            border-bottom: 2.5px solid #94a3b8; /* Tydlig baslinje */
+        }
+
+        .guideline-top {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            border-top: 1px solid var(--line-color);
+        }
+
+        .guideline-mid {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            border-top: 1px dashed var(--mid-line-color);
+        }
+
+        /* Hardmode logic: dölj hjälplinjer men behåll baslinjen */
+        .hard-mode .guideline-top,
+        .hard-mode .guideline-mid {
+            display: none;
+        }
+
+        .model-text {
+            color: #475569;
+            line-height: 1.1;
+            white-space: nowrap;
+        }
+
+        /* Varning vid spill */
+        .overflow-warning {
+            outline: 3px solid #ef4444 !important;
+            outline-offset: -3px;
+        }
+        
+        .page-break-indicator {
+            position: absolute;
+            top: var(--a4-height);
+            left: 0;
+            right: 0;
+            border-top: 2px dashed #ef4444;
+            display: flex;
+            justify-content: center;
+            pointer-events: none;
+            z-index: 50;
+        }
+
+        .page-break-label {
+            background: #ef4444;
+            color: white;
+            font-size: 11px;
+            padding: 2px 10px;
+            border-radius: 0 0 6px 6px;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        @media print {
+            body { background: none; padding: 0; margin: 0; }
+            .no-print { display: none !important; }
+            .page {
+                margin: 0;
+                box-shadow: none;
+                width: 210mm;
+                height: 297mm;
+                padding: 15mm;
+                border: none;
+            }
+            .page-break-indicator { display: none; }
+        }
+    </style>
+</head>
+<body class="pb-24">
+
+    <div class="max-w-5xl mx-auto px-4">
+        <header class="no-print bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mt-8 mb-4">
+            <div class="flex items-center gap-3 mb-4">
+                <span class="text-3xl">📝</span>
+                <h1 class="text-2xl font-bold text-slate-800 tracking-tight">Skrivträning</h1>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Textinmatning -->
+                <div class="space-y-3">
+                    <div class="flex justify-between items-end">
+                        <label class="text-sm font-bold text-slate-600">Text att öva på:</label>
+                        <div class="flex gap-4 items-center">
+                            <span id="usageLabel" class="text-xs font-semibold text-slate-400 uppercase tracking-wider">0% ANVÄND</span>
+                            <button onclick="clearText()" class="text-xs bg-slate-100 hover:bg-red-100 hover:text-red-600 text-slate-500 font-bold py-1 px-3 rounded-md transition border border-transparent hover:border-red-200 flex items-center gap-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                                Rensa fältet
+                            </button>
+                        </div>
+                    </div>
+                    <textarea id="textInput" rows="5" 
+                        class="w-full p-4 border border-slate-300 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none transition text-base" 
+                        placeholder="Skriv texten här så skapas rader automatiskt..."></textarea>
+                </div>
+
+                <!-- Inställningar -->
+                <div class="bg-slate-50 p-5 rounded-xl space-y-5 border border-slate-100">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="md:col-span-1">
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Teckensnitt</label>
+                            <select id="fontFamilyInput" class="w-full p-2.5 bg-white border border-slate-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="'Comic Neue', cursive" selected>Comic Neue</option>
+                                <option value="'Schoolbell', cursive">Schoolbell</option>
+                                <option value="'Short Stack', cursive">Short Stack</option>
+                                <option value="'Quicksand', sans-serif">Quicksand</option>
+                                <option value="'Patrick Hand', cursive">Patrick Hand</option>
+                            </select>
+                        </div>
+                        <div class="md:col-span-1">
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Storlek: <span id="sizeDisplay" class="text-blue-600">34</span>px</label>
+                            <input type="range" id="fontSizeSlider" min="20" max="70" value="34" class="w-full h-8 cursor-pointer accent-blue-600">
+                        </div>
+                        <div class="md:col-span-1 flex flex-col justify-end pb-1">
+                            <label class="flex items-center gap-2 cursor-pointer select-none group">
+                                <div class="relative">
+                                    <input type="checkbox" id="hardModeInput" class="sr-only peer">
+                                    <div class="w-10 h-6 bg-slate-300 rounded-full peer peer-checked:bg-red-500 transition-colors"></div>
+                                    <div class="absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform peer-checked:translate-x-4"></div>
+                                </div>
+                                <span class="text-sm font-bold text-slate-600 group-hover:text-red-500 transition-colors">Hardmode</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <button onclick="window.print()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl transition shadow-lg hover:shadow-blue-200 flex items-center justify-center gap-2 text-lg active:scale-[0.98]">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                        </svg>
+                        Skriv ut övningsbladet
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- A4 Preview -->
+        <div id="pageContainer" class="page">
+            <div id="contentTarget"></div>
+            <!-- Markerar sidans slut -->
+            <div class="page-break-indicator no-print">
+                <div class="page-break-label">Sidans slut - text nedanför skrivs inte ut</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const textInput = document.getElementById('textInput');
+        const fontSizeSlider = document.getElementById('fontSizeSlider');
+        const sizeDisplay = document.getElementById('sizeDisplay');
+        const fontFamilyInput = document.getElementById('fontFamilyInput');
+        const hardModeInput = document.getElementById('hardModeInput');
+        const target = document.getElementById('contentTarget');
+        const pageContainer = document.getElementById('pageContainer');
+        const usageLabel = document.getElementById('usageLabel');
+
+        const MAX_CONTENT_HEIGHT = 1000; 
+
+        // Lyssna på alla inmatningar
+        [textInput, fontSizeSlider, fontFamilyInput, hardModeInput].forEach(el => {
+            el.addEventListener('input', updateSheet);
+        });
+
+        // Funktion för att rensa texten
+        function clearText() {
+            textInput.value = '';
+            updateSheet();
+            textInput.focus();
+        }
+
+        function updateSheet() {
+            const text = textInput.value;
+            const fontSize = parseInt(fontSizeSlider.value);
+            const fontFamily = fontFamilyInput.value;
+            const isHardMode = hardModeInput.checked;
+            sizeDisplay.textContent = fontSize;
+
+            target.innerHTML = '';
+            target.style.fontFamily = fontFamily;
+            
+            // Hantera hardmode-klass
+            if (isHardMode) {
+                target.classList.add('hard-mode');
+            } else {
+                target.classList.remove('hard-mode');
+            }
+
+            if (!text.trim()) {
+                target.innerHTML = '<div class="flex flex-col items-center justify-center h-[200mm] text-slate-300 italic"><span class="text-6xl mb-4 opacity-50">🖋️</span><p>Skriv något i rutan ovan för att börja...</p></div>';
+                usageLabel.textContent = "0% ANVÄND";
+                usageLabel.className = "text-xs font-semibold text-slate-400 uppercase tracking-wider";
+                return;
+            }
+
+            // Beräkna radbrytning baserat på bredd
+            const charWidth = fontSize * 0.52; 
+            const containerWidth = target.offsetWidth;
+            const maxCharsPerLine = Math.floor(containerWidth / charWidth);
+
+            const paragraphs = text.split('\n');
+            let lines = [];
+
+            paragraphs.forEach(p => {
+                if (p.trim() === '') {
+                    lines.push(''); 
+                    return;
+                }
+                const words = p.split(' ');
+                let currentLine = "";
+                words.forEach(word => {
+                    if ((currentLine + word).length <= maxCharsPerLine) {
+                        currentLine += (currentLine === "" ? "" : " ") + word;
+                    } else {
+                        lines.push(currentLine);
+                        currentLine = word;
+                    }
+                });
+                lines.push(currentLine);
+            });
+
+            // Bygg övningsrader
+            lines.forEach(lineText => {
+                const group = document.createElement('div');
+                group.className = 'mb-6';
+
+                // Modelltext
+                const model = document.createElement('div');
+                model.className = 'model-text';
+                model.style.fontSize = fontSize + 'px';
+                model.textContent = lineText || '\u00A0';
+                group.appendChild(model);
+
+                // Linjesystem
+                const linesWrap = document.createElement('div');
+                linesWrap.className = 'lines-container';
+                linesWrap.style.height = (fontSize * 1.1) + 'px';
+                
+                linesWrap.innerHTML = `
+                    <div class="guideline-top"></div>
+                    <div class="guideline-mid"></div>
+                `;
+                
+                group.appendChild(linesWrap);
+                target.appendChild(group);
+            });
+
+            // Kontrollera A4-utrymme
+            const currentHeight = target.offsetHeight;
+            const percentUsed = Math.min(Math.round((currentHeight / MAX_CONTENT_HEIGHT) * 100), 150);
+            
+            usageLabel.textContent = `${percentUsed}% ANVÄND`;
+            
+            if (percentUsed > 100) {
+                usageLabel.className = "text-xs font-bold text-red-500 uppercase tracking-wider animate-pulse";
+                pageContainer.classList.add('overflow-warning');
+            } else if (percentUsed > 85) {
+                usageLabel.className = "text-xs font-bold text-orange-500 uppercase tracking-wider";
+                pageContainer.classList.remove('overflow-warning');
+            } else {
+                usageLabel.className = "text-xs font-bold text-blue-600 uppercase tracking-wider";
+                pageContainer.classList.remove('overflow-warning');
+            }
+        }
+
+        // Förinställt vid start
+        window.onload = () => {
+            textInput.value = "Först tränar vi med stödlinjer.\nSen kan du testa Hardmode!\nDå får du lita på din egen hand.";
+            updateSheet();
+        };
+    </script>
+</body>
+</html>
