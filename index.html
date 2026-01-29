@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Skrivträning - Skapa egna övningsblad</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Schoolbell&family=Short+Stack&family=Comic+Neue:wght@400;700&family=Quicksand:wght@400;700&family=Patrick+Hand&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Schoolbell&family=Short+Stack&family=Comic+Neue:wght@400;700&family=Quicksand:wght@400;700&family=Patrick+Hand&family=Inter:wght@400;700&family=Dancing+Script&family=Caveat&family=Indie+Flower&family=Pinyon+Script&family=Montserrat:wght@300&display=swap" rel="stylesheet">
     <style>
         :root {
             --line-color: #cbd5e1;
@@ -160,22 +160,35 @@
                         placeholder="Skriv texten här så skapas rader automatiskt..."></textarea>
                 </div>
 
-                <!-- Inställningar (Förenklad rad) -->
+                <!-- Inställningar -->
                 <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div class="md:col-span-1">
                             <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Teckensnitt</label>
                             <select id="fontFamilyInput" class="w-full p-2.5 bg-white border border-slate-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                <option value="'Comic Neue', cursive" selected>Comic Neue</option>
-                                <option value="'Schoolbell', cursive">Schoolbell</option>
-                                <option value="'Short Stack', cursive">Short Stack</option>
-                                <option value="'Quicksand', sans-serif">Quicksand</option>
-                                <option value="'Patrick Hand', cursive">Patrick Hand</option>
+                                <optgroup label="Barn">
+                                    <option value="'Comic Neue', cursive" selected>Comic Neue</option>
+                                    <option value="'Schoolbell', cursive">Schoolbell</option>
+                                    <option value="'Short Stack', cursive">Short Stack</option>
+                                    <option value="'Quicksand', sans-serif">Quicksand</option>
+                                    <option value="'Patrick Hand', cursive">Patrick Hand</option>
+                                </optgroup>
+                                <optgroup label="Vuxen">
+                                    <option value="'Dancing Script', cursive">Dancing Script (Skrivstil)</option>
+                                    <option value="'Caveat', cursive">Caveat (Vardag)</option>
+                                    <option value="'Indie Flower', cursive">Indie Flower (Lättsam)</option>
+                                    <option value="'Pinyon Script', cursive">Pinyon Script (Kalligrafi)</option>
+                                    <option value="'Montserrat', sans-serif">Montserrat (Arkitektonisk)</option>
+                                </optgroup>
                             </select>
                         </div>
                         <div class="md:col-span-1">
                             <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Storlek: <span id="sizeDisplay" class="text-blue-600">34</span>px</label>
                             <input type="range" id="fontSizeSlider" min="20" max="70" value="34" class="w-full h-8 cursor-pointer accent-blue-600">
+                        </div>
+                        <div class="md:col-span-1">
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Avstånd: <span id="spacingDisplay" class="text-blue-600">0</span>px</label>
+                            <input type="range" id="letterSpacingSlider" min="0" max="10" step="0.5" value="0" class="w-full h-8 cursor-pointer accent-blue-600">
                         </div>
                         <div class="md:col-span-1 flex flex-col justify-end pb-1">
                             <label class="flex items-center gap-2 cursor-pointer select-none group">
@@ -215,7 +228,9 @@
     <script>
         const textInput = document.getElementById('textInput');
         const fontSizeSlider = document.getElementById('fontSizeSlider');
+        const letterSpacingSlider = document.getElementById('letterSpacingSlider');
         const sizeDisplay = document.getElementById('sizeDisplay');
+        const spacingDisplay = document.getElementById('spacingDisplay');
         const fontFamilyInput = document.getElementById('fontFamilyInput');
         const hardModeInput = document.getElementById('hardModeInput');
         const target = document.getElementById('contentTarget');
@@ -225,7 +240,7 @@
         const MAX_CONTENT_HEIGHT = 1000; 
 
         // Lyssna på alla inmatningar
-        [textInput, fontSizeSlider, fontFamilyInput, hardModeInput].forEach(el => {
+        [textInput, fontSizeSlider, letterSpacingSlider, fontFamilyInput, hardModeInput].forEach(el => {
             el.addEventListener('input', updateSheet);
         });
 
@@ -239,9 +254,12 @@
         function updateSheet() {
             const text = textInput.value;
             const fontSize = parseInt(fontSizeSlider.value);
+            const letterSpacing = parseFloat(letterSpacingSlider.value);
             const fontFamily = fontFamilyInput.value;
             const isHardMode = hardModeInput.checked;
+            
             sizeDisplay.textContent = fontSize;
+            spacingDisplay.textContent = letterSpacing;
 
             target.innerHTML = '';
             target.style.fontFamily = fontFamily;
@@ -261,7 +279,12 @@
             }
 
             // Beräkna radbrytning baserat på bredd
-            const charWidth = fontSize * 0.52; 
+            let charWidthFactor = 0.52;
+            if (fontFamily.includes('Pinyon Script')) charWidthFactor = 0.45;
+            if (fontFamily.includes('Montserrat')) charWidthFactor = 0.58;
+            
+            // Inkludera bokstavsavståndet i breddberäkningen
+            const charWidth = (fontSize * charWidthFactor) + letterSpacing; 
             const containerWidth = target.offsetWidth;
             const maxCharsPerLine = Math.floor(containerWidth / charWidth);
 
@@ -295,6 +318,7 @@
                 const model = document.createElement('div');
                 model.className = 'model-text';
                 model.style.fontSize = fontSize + 'px';
+                model.style.letterSpacing = letterSpacing + 'px';
                 model.textContent = lineText || '\u00A0';
                 group.appendChild(model);
 
